@@ -18,6 +18,7 @@ executable transgui
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5,
+                       bytestring,
                        aeson,
                        http-types,
                        http-client
