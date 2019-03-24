@@ -16,9 +16,11 @@ extra-source-files:  README.md
 executable transgui
   hs-source-dirs:      src
   main-is:             Main.hs
+  other-modules:       RPC
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5,
                        bytestring,
+                       transformers,
                        aeson,
                        http-types,
                        http-client
