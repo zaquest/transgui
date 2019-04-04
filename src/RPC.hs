@@ -11,21 +11,24 @@ import Network.HTTP.Client
 import Network.HTTP.Types
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LS
+import Data.Aeson (object, (.=), encode, Value(..), ToJSON(..))
+import qualified Data.Vector as Vec
+import Data.Text (Text)
 
 
-data RPCSettings = RPCSettings
+data Settings = Settings
   { rpcAddress :: String
   }
 
 
-data RPCData = RPCData
+data Data = Data
   { dAddress :: String
   , dManager :: Manager
   , dSessionId :: Maybe BS.ByteString
   }
 
 
-newtype RPC a = RPC { unRPC :: ReaderT (IORef RPCData) IO a }
+newtype RPC a = RPC { unRPC :: ReaderT (IORef Data) IO a }
   deriving (Functor, Applicative, Monad, MonadIO)
 
 
@@ -51,40 +54,44 @@ saveSessionId resp = do
   liftIO $ modifyIORef rpcDataRef (\d -> d { dSessionId = hdr })
 
 
-request :: RPC (Response LS.ByteString)
-request = do
+requestLBS :: LS.ByteString -> RPC (Response LS.ByteString)
+requestLBS body = do
   d <- ask
 
   req <- liftIO $ parseRequest (dAddress d)
-  let req' = setSessionId (dSessionId d) req
-  response <- liftIO $ httpLbs req' (dManager d)
+  let req' = req { method = "POST"
+                 , requestBody = RequestBodyLBS body }
+  let req'' = setSessionId (dSessionId d) req'
+  response <- liftIO $ httpLbs req'' (dManager d)
   saveSessionId response
 
   case statusCode (responseStatus response) of
-    409 -> request
+    409 -> requestLBS body
     _ -> pure response
 
 
-runRPC :: RPCSettings -> RPC a -> IO a
-runRPC settings action = do
+run :: Settings -> RPC a -> IO a
+run settings action = do
   manager <- newManager defaultManagerSettings
-  let rpcData = RPCData (rpcAddress settings) manager Nothing
+  let rpcData = Data (rpcAddress settings) manager Nothing
   rpcDataRef <- newIORef rpcData
   Reader.runReaderT (unRPC action) rpcDataRef
 
 
-asks :: (RPCData -> a) -> RPC a
+asks :: (Data -> a) -> RPC a
 asks f = do
   rpcDataRef <- RPC Reader.ask
   liftIO (f <$> readIORef rpcDataRef)
 
 
-ask :: RPC RPCData
+ask :: RPC Data
 ask = asks id
 
 
 doshit :: RPC ()
 doshit = do
-  resp <- request
+  let req = object ["method" .= ("torrent-get" :: Text)
+                   ,"arguments" .= object ["fields" .= ["id" :: Text, "name"]]]
+  resp <- requestLBS (encode req)
   liftIO $ putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus resp)
   liftIO $ print $ responseBody resp
