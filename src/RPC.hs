@@ -96,3 +96,10 @@ doshit = do
   liftIO $ do
     putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus resp)
     print $ responseBody resp
+
+
+main :: IO ()
+main = do
+  let settings = RPC.Settings "http://192.168.0.100:9091/transmission/rpc"
+  hdr <- RPC.run settings RPC.doshit
+  print hdr
