@@ -1,3 +1,4 @@
+cabal-version:       2.2
 name:                transgui
 version:             0.1.0.0
 synopsis:            Transmission Remote GUI
@@ -10,7 +11,6 @@ maintainer:          web.elektro.net@gmail.com
 copyright:           2018 zaquest
 category:            Torrent
 build-type:          Simple
-cabal-version:       >=1.10
 extra-source-files:  README.md
 
 executable transgui
@@ -25,4 +25,6 @@ executable transgui
                        vector,
                        aeson,
                        http-types,
-                       http-client
+                       http-client,
+                       haskell-gi-base,
+                       gi-gtk

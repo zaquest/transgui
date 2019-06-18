@@ -93,5 +93,6 @@ doshit = do
   let req = object ["method" .= ("torrent-get" :: Text)
                    ,"arguments" .= object ["fields" .= ["id" :: Text, "name"]]]
   resp <- requestLBS (encode req)
-  liftIO $ putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus resp)
-  liftIO $ print $ responseBody resp
+  liftIO $ do
+    putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus resp)
+    print $ responseBody resp
