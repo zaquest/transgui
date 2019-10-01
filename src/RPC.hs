@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
 module RPC where
 
+import Prelude hiding (init)
 import Data.List (find)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader (ReaderT)
@@ -70,12 +71,15 @@ requestLBS body = do
     _ -> pure response
 
 
-run :: Settings -> RPC a -> IO a
-run settings action = do
+init :: Settings -> IO (IORef Data)
+init settings = do
   manager <- newManager defaultManagerSettings
   let rpcData = Data (rpcAddress settings) manager Nothing
-  rpcDataRef <- newIORef rpcData
-  Reader.runReaderT (unRPC action) rpcDataRef
+  newIORef rpcData
+
+
+run :: (IORef Data) -> RPC a -> IO a
+run dataRef (RPC action) = Reader.runReaderT action dataRef
 
 
 asks :: (Data -> a) -> RPC a
@@ -101,5 +105,5 @@ doshit = do
 main :: IO ()
 main = do
   let settings = RPC.Settings "http://192.168.0.100:9091/transmission/rpc"
-  hdr <- RPC.run settings RPC.doshit
+  hdr <- RPC.init settings >>= (`RPC.run` RPC.doshit)
   print hdr

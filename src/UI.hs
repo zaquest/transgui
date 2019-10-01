@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings, OverloadedLabels, ScopedTypeVariables, LambdaCase #-}
+{-# LANGUAGE OverloadedStrings, OverloadedLabels #-}
+{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module UI where
 
 import Data.Monoid ((<>))
@@ -6,10 +8,22 @@ import Control.Monad (void)
 import qualified Data.Text.IO as T
 import Data.Text (Text, pack)
 import System.Environment (getArgs)
+import Control.Monad.Trans.Reader (ReaderT)
+import qualified Control.Monad.Trans.Reader as Reader
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import Data.GI.Base
 import qualified GI.Gio as Gio
 import qualified GI.Gtk as Gtk
+
+
+data Data = Data
+  { uiApp :: Gtk.Application
+  }
+
+
+newtype UI a = UI { runUI :: ReaderT Data IO a }
+  deriving (Functor, Applicative, Monad, MonadIO)
 
 
 printHello :: Text -> IO ()
@@ -70,6 +84,34 @@ activateApp app = do
   -- connectBtnClick builder "quit" $ printQuit app "quit button"
 
   #showAll window
+
+
+init :: IO Data
+init = do
+  app <- new Gtk.Application
+    [ #applicationId := "zaquest.transgui"
+    , #flags := [ Gio.ApplicationFlagsFlagsNone ]
+    ]
+  void (on app #activate (activateApp app))
+  pure (Data app)
+
+
+asks :: (Data -> a) -> UI a
+asks f = UI (Reader.asks f)
+
+
+ask :: UI Data
+ask = asks id
+
+
+start :: UI ()
+start = do
+  app <- asks uiApp
+  liftIO $ void (Gio.applicationRun app Nothing)
+
+
+run :: Data -> UI a -> IO a
+run uiData (UI action) = Reader.runReaderT action uiData
 
 
 main :: IO ()
