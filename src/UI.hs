@@ -11,14 +11,17 @@ import System.Environment (getArgs)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
 
 import Data.GI.Base
+import Data.GI.Base.GType
 import qualified GI.Gio as Gio
 import qualified GI.Gtk as Gtk
 
 
 data Data = Data
-  { uiApp :: Gtk.Application
+  { uiApp :: Gtk.Application,
+    uiBuilder :: MVar Gtk.Builder
   }
 
 
@@ -37,6 +40,23 @@ printQuit app t = do
   return ()
 
 
+data Column = Column
+  { name :: Text
+  , gtype :: GType
+  }
+
+
+allColumns :: [Column]
+allColumns = [Column "Name" gtypeString]
+
+
+mkListStore :: [Column] -> IO Gtk.ListStore
+mkListStore cols = do
+  store <- new Gtk.ListStore []
+  #setColumnTypes store (map gtype cols)
+  pure store
+
+
 getBuilderObj :: forall o'
                . GObject o' 
                => Gtk.Builder 
@@ -51,11 +71,11 @@ getBuilderObj builder name gtkConstr = #getObject builder name >>= \case
 
 
 -- Be aware that this function silently ignores absent names
-connectBtnClick :: Gtk.Builder -> Text -> IO () -> IO ()
-connectBtnClick builder name handler =
-  getBuilderObj builder name Gtk.Button >>= \case
-    Just button -> void (on button #clicked handler)
-    Nothing -> return ()
+-- connectBtnClick :: Gtk.Builder -> Text -> IO () -> IO ()
+-- connectBtnClick builder name handler =
+--   getBuilderObj builder name Gtk.Button >>= \case
+--     Just button -> void (on button #clicked handler)
+--     Nothing -> return ()
 
 
 quitAction :: Gtk.Application -> IO ()
@@ -65,13 +85,18 @@ quitAction app = do
   Gio.actionMapAddAction app action
 
 
-activateApp :: Gtk.Application -> IO ()
-activateApp app = do
+activateApp :: MVar Gtk.Builder -> Gtk.Application -> IO ()
+activateApp mbuilder app = do
   builder <- new Gtk.Builder []
   #addFromFile builder "ui/main.glade"
 
   Just window <- getBuilderObj builder "window" Gtk.ApplicationWindow
   set window [ #application := app ]
+
+  store <- mkListStore allColumns
+  Just torrentList <- getBuilderObj builder "torrent-list" Gtk.TreeView
+  set torrentList [ #model := store ]
+
 
   quitAction app
 
@@ -85,6 +110,8 @@ activateApp app = do
 
   #showAll window
 
+  putMVar mbuilder builder
+
 
 init :: IO Data
 init = do
@@ -92,8 +119,9 @@ init = do
     [ #applicationId := "zaquest.transgui"
     , #flags := [ Gio.ApplicationFlagsFlagsNone ]
     ]
-  void (on app #activate (activateApp app))
-  pure (Data app)
+  mbuilder <- newEmptyMVar
+  void (on app #activate (activateApp mbuilder app))
+  pure (Data app mbuilder)
 
 
 asks :: (Data -> a) -> UI a
@@ -114,11 +142,11 @@ run :: Data -> UI a -> IO a
 run uiData (UI action) = Reader.runReaderT action uiData
 
 
-main :: IO ()
-main = do
-    app <- new Gtk.Application
-      [ #applicationId := "zaquest.transgui"
-      , #flags := [ Gio.ApplicationFlagsFlagsNone ]
-      ]
-    void (on app #activate (activateApp app))
-    void (Gio.applicationRun app Nothing)
+-- main :: IO ()
+-- main = do
+--     app <- new Gtk.Application
+--       [ #applicationId := "zaquest.transgui"
+--       , #flags := [ Gio.ApplicationFlagsFlagsNone ]
+--       ]
+--     void (on app #activate (activateApp app))
+--     void (Gio.applicationRun app Nothing)

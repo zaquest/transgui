@@ -1,6 +1,7 @@
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 module RPC where
 
+import GHC.Generics (Generic)
 import Prelude hiding (init)
 import Data.List (find)
 import Control.Monad.Trans.Class (lift)
@@ -15,6 +16,10 @@ import qualified Data.ByteString.Lazy as LS
 import Data.Aeson (object, (.=), encode, Value(..), ToJSON(..))
 import qualified Data.Vector as Vec
 import Data.Text (Text)
+import Torrent (Torrent)
+import qualified Torrent as T
+import qualified Response
+import qualified Data.Aeson as Aeson
 
 
 data Settings = Settings
@@ -92,18 +97,20 @@ ask :: RPC Data
 ask = asks id
 
 
-doshit :: RPC ()
-doshit = do
-  let req = object ["method" .= ("torrent-get" :: Text)
-                   ,"arguments" .= object ["fields" .= ["id" :: Text, "name"]]]
+torrentGet :: [Text] -> RPC [Torrent]
+torrentGet fields = do
+  let req = object [ "method" .= ("torrent-get" :: Text)
+                   , "arguments" .= object ["fields" .= fields]
+                   ]
   resp <- requestLBS (encode req)
-  liftIO $ do
-    putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus resp)
-    print $ responseBody resp
+  let Right response =
+        Aeson.eitherDecode (responseBody resp)
+          :: Either String (Response.TorrentGet)
+  pure $ Response.torrents $ Response.arguments response
 
 
 main :: IO ()
 main = do
   let settings = RPC.Settings "http://192.168.0.100:9091/transmission/rpc"
-  hdr <- RPC.init settings >>= (`RPC.run` RPC.doshit)
+  hdr <- RPC.init settings >>= (`RPC.run` RPC.torrentGet ["id", "name"])
   print hdr
