@@ -94,9 +94,21 @@ activateApp mbuilder app = do
   set window [ #application := app ]
 
   store <- mkListStore allColumns
+  row1 <- toGValue (Just "Row 1" :: Maybe Text)
+  #insertWithValuesv store (-1) [0] [row1]
+  row2 <- toGValue (Just "Row 1" :: Maybe Text)
+  #insertWithValuesv store (-1) [0] [row2]
+  row3 <- toGValue (Just "Row 1" :: Maybe Text)
+  #insertWithValuesv store (-1) [0] [row3]
+
+  nameColumn <- new Gtk.TreeViewColumn [ #title := "Name" ]
+  renderer <- new Gtk.CellRendererText []
+  #packStart nameColumn renderer True
+  #addAttribute nameColumn renderer "text" 0
+
   Just torrentList <- getBuilderObj builder "torrent-list" Gtk.TreeView
   set torrentList [ #model := store ]
-
+  #appendColumn torrentList nameColumn
 
   quitAction app
 
