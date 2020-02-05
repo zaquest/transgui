@@ -11,7 +11,7 @@ import Torrent (Torrent)
 data Response a = Response
   { result :: Text
   , arguments :: a
-  , tag :: Maybe Text
+  , tag :: Maybe Int
   } deriving (Generic, Show)
 
 instance FromJSON a => FromJSON (Response a)

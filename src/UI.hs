@@ -12,6 +12,10 @@ import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
+import Data.Int
+import Some
+import Field (Field)
+import qualified Field as F
 
 import Data.GI.Base
 import Data.GI.Base.GType
@@ -20,8 +24,9 @@ import qualified GI.Gtk as Gtk
 
 
 data Data = Data
-  { uiApp :: Gtk.Application,
-    uiBuilder :: MVar Gtk.Builder
+  { uiApp :: Gtk.Application
+  , uiBuilder :: MVar Gtk.Builder
+  , uiStore :: Gtk.ListStore
   }
 
 
@@ -40,30 +45,20 @@ printQuit app t = do
   return ()
 
 
-data Column = Column
-  { name :: Text
-  , gtype :: GType
-  }
-
-
-allColumns :: [Column]
-allColumns = [Column "Name" gtypeString]
-
-
-mkListStore :: [Column] -> IO Gtk.ListStore
-mkListStore cols = do
+mkListStore :: IO Gtk.ListStore
+mkListStore = do
   store <- new Gtk.ListStore []
-  #setColumnTypes store (map gtype cols)
+  #setColumnTypes store (mapWithSome F.allFields F.gtype)
   pure store
 
 
 getBuilderObj :: forall o'
-               . GObject o' 
-               => Gtk.Builder 
-               -> Text 
-               -> (ManagedPtr o' -> o') 
+               . GObject o'
+               => Gtk.Builder
+               -> Text
+               -> (ManagedPtr o' -> o')
                -> IO (Maybe o')
-getBuilderObj builder name gtkConstr = #getObject builder name >>= \case 
+getBuilderObj builder name gtkConstr = #getObject builder name >>= \case
   Just obj -> castTo gtkConstr obj
   Nothing -> do
     T.putStrLn $ "Object named '" <> name <> "' could not be found."
@@ -85,29 +80,37 @@ quitAction app = do
   Gio.actionMapAddAction app action
 
 
-activateApp :: MVar Gtk.Builder -> Gtk.Application -> IO ()
-activateApp mbuilder app = do
+activateApp :: Gtk.ListStore -> MVar Gtk.Builder -> Gtk.Application -> IO ()
+activateApp store mbuilder app = do
   builder <- new Gtk.Builder []
   #addFromFile builder "ui/main.glade"
 
   Just window <- getBuilderObj builder "window" Gtk.ApplicationWindow
   set window [ #application := app ]
 
-  store <- mkListStore allColumns
-  row1 <- toGValue (Just "Row 1" :: Maybe Text)
-  #insertWithValuesv store (-1) [0] [row1]
-  row2 <- toGValue (Just "Row 1" :: Maybe Text)
-  #insertWithValuesv store (-1) [0] [row2]
-  row3 <- toGValue (Just "Row 1" :: Maybe Text)
-  #insertWithValuesv store (-1) [0] [row3]
+  n1 <- toGValue (1 :: Int64)
+  s1 <- toGValue ("Row 1" :: Text)
+  #insertWithValuesv store (-1) [0, 1] [n1, s1]
+  n2 <- toGValue (2 :: Int64)
+  s2 <- toGValue ("Row 2" :: Text)
+  #insertWithValuesv store (-1) [0, 1] [n2, s2]
+  n3 <- toGValue (3 :: Int64)
+  s3 <- toGValue ("Row 3" :: Text)
+  #insertWithValuesv store (-1) [0, 1] [n3, s3]
+
+  idColumn <- new Gtk.TreeViewColumn [ #title := "ID" ]
+  idRenderer <- new Gtk.CellRendererText []
+  #packStart idColumn idRenderer True
+  #addAttribute idColumn idRenderer "text" 0
 
   nameColumn <- new Gtk.TreeViewColumn [ #title := "Name" ]
-  renderer <- new Gtk.CellRendererText []
-  #packStart nameColumn renderer True
-  #addAttribute nameColumn renderer "text" 0
+  nameRenderer <- new Gtk.CellRendererText []
+  #packStart nameColumn nameRenderer True
+  #addAttribute nameColumn nameRenderer "text" 1
 
   Just torrentList <- getBuilderObj builder "torrent-list" Gtk.TreeView
   set torrentList [ #model := store ]
+  #appendColumn torrentList idColumn
   #appendColumn torrentList nameColumn
 
   quitAction app
@@ -132,8 +135,9 @@ init = do
     , #flags := [ Gio.ApplicationFlagsFlagsNone ]
     ]
   mbuilder <- newEmptyMVar
-  void (on app #activate (activateApp mbuilder app))
-  pure (Data app mbuilder)
+  store <- mkListStore
+  void (on app #activate (activateApp store mbuilder app))
+  pure (Data app mbuilder store)
 
 
 asks :: (Data -> a) -> UI a

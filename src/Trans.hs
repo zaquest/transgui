@@ -11,6 +11,7 @@ import qualified RPC
 import UI (UI)
 import qualified UI
 import Data.Text (Text)
+import qualified Field as F
 
 
 data Settings = Settings
@@ -58,15 +59,10 @@ run :: Data -> Trans a -> IO a
 run datum (Trans action) = Reader.runReaderT action datum
 
 
-data Field = Field
-  { key :: Text
-  }
-
-
 main :: IO ()
 main = do
   datum <- init (Settings "http://192.168.0.100:9091/transmission/rpc")
   run datum $ do
-    torrents <- rpc (RPC.torrentGet ["id", "name"])
+    torrents <- rpc (RPC.torrentGet (F.keys F.allFields))
     liftIO $ print torrents
     ui UI.start
