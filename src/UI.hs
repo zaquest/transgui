@@ -54,10 +54,10 @@ mkListStore = do
 
 getBuilderObj :: forall o'
                . GObject o'
-               => Gtk.Builder
-               -> Text
-               -> (ManagedPtr o' -> o')
-               -> IO (Maybe o')
+              => Gtk.Builder
+              -> Text
+              -> (ManagedPtr o' -> o')
+              -> IO (Maybe o')
 getBuilderObj builder name gtkConstr = #getObject builder name >>= \case
   Just obj -> castTo gtkConstr obj
   Nothing -> do

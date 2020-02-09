@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 module Torrent where
 
 import Prelude hiding (id)
@@ -9,14 +9,18 @@ import Data.Aeson.Types (Parser, FromJSON(..))
 import Data.Default (Default(..))
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
+import Lens.Micro.TH
 
 
 data Torrent = Torrent
-  { id :: Int32
-  , name :: Text
-  , peersGettingFromUs :: Int32
-  , peersSendingToUs :: Int32
+  { _id :: Int32
+  , _name :: Text
+  , _peersGettingFromUs :: Int32
+  , _peersSendingToUs :: Int32
   } deriving (Show)
+
+
+makeLenses ''Torrent
 
 
 get :: (FromJSON a) => Object -> Text -> a -> Parser a
@@ -25,18 +29,18 @@ get obj key val = (obj .:? key) <&> (fromMaybe val)
 
 instance FromJSON Torrent where
   parseJSON = withObject "Torrent" $ \v -> Torrent
-    <$> get v "id" (id def)
-    <*> get v "name" (name def)
-    <*> get v "peersGettingFromUs" (peersGettingFromUs def)
-    <*> get v "peersSendingToUs" (peersSendingToUs def)
+    <$> get v "id" (_id def)
+    <*> get v "name" (_name def)
+    <*> get v "peersGettingFromUs" (_peersGettingFromUs def)
+    <*> get v "peersSendingToUs" (_peersSendingToUs def)
 
 
 defaultTorrent :: Torrent
 defaultTorrent = Torrent
-  { id = 0
-  , name = ""
-  , peersGettingFromUs = 0
-  , peersSendingToUs = 0
+  { _id = 0
+  , _name = ""
+  , _peersGettingFromUs = 0
+  , _peersSendingToUs = 0
   }
 
 

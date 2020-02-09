@@ -31,7 +31,9 @@ library
                        gi-gtk-hs,
                        gi-gio,
                        data-default,
-                       dependent-sum
+                       dependent-sum,
+                       microlens,
+                       microlens-th
   default-language: Haskell2010
 
 
