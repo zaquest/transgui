@@ -16,6 +16,8 @@ import Data.Int
 import Some
 import Field (Field)
 import qualified Field as F
+import Column (Column)
+import qualified Column as C
 
 import Data.GI.Base
 import Data.GI.Base.GType
@@ -32,17 +34,6 @@ data Data = Data
 
 newtype UI a = UI { runUI :: ReaderT Data IO a }
   deriving (Functor, Applicative, Monad, MonadIO)
-
-
-printHello :: Text -> IO ()
-printHello t = T.putStrLn $ "Hello from " <> t <> "."
-
-
-printQuit :: Gtk.Application -> Text -> IO ()
-printQuit app t = do
-  T.putStrLn $ "Quitting by " <> t <> "."
-  #quit app
-  return ()
 
 
 mkListStore :: IO Gtk.ListStore
@@ -65,19 +56,15 @@ getBuilderObj builder name gtkConstr = #getObject builder name >>= \case
     return Nothing
 
 
--- Be aware that this function silently ignores absent names
--- connectBtnClick :: Gtk.Builder -> Text -> IO () -> IO ()
--- connectBtnClick builder name handler =
---   getBuilderObj builder name Gtk.Button >>= \case
---     Just button -> void (on button #clicked handler)
---     Nothing -> return ()
-
-
 quitAction :: Gtk.Application -> IO ()
 quitAction app = do
   action <- new Gio.SimpleAction [ #name := "quit" ]
   on action #activate $ const (#quit app)
   Gio.actionMapAddAction app action
+
+
+initTreeView :: Gtk.TreeView -> [Column] -> IO ()
+initTreeView tv cols = mapM_ (C.mkTreeViewColumn tv) cols
 
 
 activateApp :: Gtk.ListStore -> MVar Gtk.Builder -> Gtk.Application -> IO ()
@@ -88,40 +75,22 @@ activateApp store mbuilder app = do
   Just window <- getBuilderObj builder "window" Gtk.ApplicationWindow
   set window [ #application := app ]
 
-  n1 <- toGValue (1 :: Int64)
+  n1 <- toGValue (1 :: Int32)
   s1 <- toGValue ("Row 1" :: Text)
   #insertWithValuesv store (-1) [0, 1] [n1, s1]
-  n2 <- toGValue (2 :: Int64)
+  n2 <- toGValue (2 :: Int32)
   s2 <- toGValue ("Row 2" :: Text)
   #insertWithValuesv store (-1) [0, 1] [n2, s2]
-  n3 <- toGValue (3 :: Int64)
+  n3 <- toGValue (3 :: Int32)
   s3 <- toGValue ("Row 3" :: Text)
   #insertWithValuesv store (-1) [0, 1] [n3, s3]
 
-  idColumn <- new Gtk.TreeViewColumn [ #title := "ID" ]
-  idRenderer <- new Gtk.CellRendererText []
-  #packStart idColumn idRenderer True
-  #addAttribute idColumn idRenderer "text" 0
-
-  nameColumn <- new Gtk.TreeViewColumn [ #title := "Name" ]
-  nameRenderer <- new Gtk.CellRendererText []
-  #packStart nameColumn nameRenderer True
-  #addAttribute nameColumn nameRenderer "text" 1
-
   Just torrentList <- getBuilderObj builder "torrent-list" Gtk.TreeView
   set torrentList [ #model := store ]
-  #appendColumn torrentList idColumn
-  #appendColumn torrentList nameColumn
+
+  initTreeView torrentList C.allColumns
 
   quitAction app
-
-  -- on window #destroy $ printQuit app "windows close button"
-
-  -- let name = "button1"
-  -- connectBtnClick builder name $ do printHello name
-  -- let name = "button2"
-  -- connectBtnClick builder name $ do printHello name
-  -- connectBtnClick builder "quit" $ printQuit app "quit button"
 
   #showAll window
 

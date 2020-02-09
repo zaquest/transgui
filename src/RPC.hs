@@ -103,10 +103,12 @@ torrentGet fields = do
                    , "arguments" .= object ["fields" .= fields]
                    ]
   resp <- requestLBS (encode req)
-  let Right response =
+  let eresp =
         Aeson.eitherDecode (responseBody resp)
           :: Either String (Response.TorrentGet)
-  pure $ Response.torrents $ Response.arguments response
+  case eresp of
+    Right resp -> pure $ Response.torrents $ Response.arguments resp
+    Left msg -> error msg
 
 
 main :: IO ()
