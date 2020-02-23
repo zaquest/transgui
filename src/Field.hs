@@ -92,8 +92,8 @@ allFields =
   ]
 
 
-total :: Int
-total = length allFields
+total :: Integral a => a
+total = fromIntegral (length allFields)
 
 
 keys :: [Some Field] -> [Text]

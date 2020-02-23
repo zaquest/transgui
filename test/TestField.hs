@@ -1,6 +1,7 @@
 module TestField where
 
 import Test.HUnit
+import Data.Int (Int32)
 import Some
 import qualified Field as F
 
