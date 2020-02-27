@@ -81,16 +81,6 @@ activateApp store mbuilder app = do
   Just window <- getBuilderObj builder "window" Gtk.ApplicationWindow
   set window [ #application := app ]
 
-  n1 <- toGValue (1 :: Int32)
-  s1 <- toGValue ("Row 1" :: Text)
-  #insertWithValuesv store (-1) [0, 1] [n1, s1]
-  n2 <- toGValue (2 :: Int32)
-  s2 <- toGValue ("Row 2" :: Text)
-  #insertWithValuesv store (-1) [0, 1] [n2, s2]
-  n3 <- toGValue (3 :: Int32)
-  s3 <- toGValue ("Row 3" :: Text)
-  #insertWithValuesv store (-1) [0, 1] [n3, s3]
-
   Just torrentList <- getBuilderObj builder "torrent-list" Gtk.TreeView
   set torrentList [ #model := store ]
 

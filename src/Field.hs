@@ -6,6 +6,7 @@ import qualified Data.List as List
 import Data.Proxy (Proxy(..))
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.GI.Base (GType(gtypeToCGType), IsGValue(..), gtypeName, GValue)
 import Data.GI.Base.GType (gtypeString, gtypeInt, gtypeInt64, gtypeBoolean)
 import Some
@@ -46,6 +47,14 @@ instance IsGValue Text where
       Nothing -> pure ""
 
 
+instance Show (Field a) where
+  show f = "Field \"" ++ T.unpack (key f) ++ "\" " ++ show (gtype f)
+
+
+instance Eq (Field a) where
+  f1 == f2 = idx f1 == idx f2 && gtype f1 == gtype f2
+
+
 instance Eq GType where
   gt1 == gt2 = gtypeToCGType gt1 == gtypeToCGType gt2
 
@@ -54,16 +63,16 @@ instance Show GType where
   show gt = unsafePerformIO (gtypeName gt)
 
 
--- instance GEq Field where
---   geq fa fb = do
---     Refl <- testEquality (htype fa) (htype fb)
---     if fa == fb
---        then Just Refl
---        else Nothing
--- 
--- 
--- instance GShow Field where
---   gshowsPrec = showsPrec
+instance GEq Field where
+  geq fa fb = do
+    Refl <- testEquality (htype fa) (htype fb)
+    if idx fa == idx fb
+       then Just Refl
+       else Nothing
+
+
+instance GShow Field where
+  gshowsPrec = showsPrec
 
 
 mkField :: (IsGValue a, Typeable a)
