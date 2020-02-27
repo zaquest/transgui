@@ -30,6 +30,7 @@ library
                        gi-gtk,
                        gi-gtk-hs,
                        gi-gio,
+                       gi-glib,
                        data-default,
                        dependent-sum,
                        microlens,

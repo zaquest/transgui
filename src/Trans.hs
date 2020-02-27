@@ -53,7 +53,7 @@ ui action = do
 init :: Settings -> IO Data
 init settings = do
   rpcData <- RPC.init (RPC.Settings (rcpAddress settings))
-  uiData <- UI.init
+  uiData <- UI.init (\keys -> RPC.run rpcData (RPC.torrentGet keys))
   pure $ Data rpcData uiData
 
 
@@ -65,7 +65,7 @@ main :: IO ()
 main = do
   datum <- init (Settings "http://192.168.0.100:9091/transmission/rpc")
   run datum $ do
-    torrents <- rpc (RPC.torrentGet (F.keys (C.collectFields [C.id, C.name])))
-    liftIO $ print torrents
+    -- torrents <- rpc (RPC.torrentGet (F.keys (C.collectFields [C.id, C.name])))
+    -- liftIO $ print torrents
     rpcdata <- asks rpcData
-    ui $ UI.start (\keys -> RPC.run rpcdata (RPC.torrentGet keys))
+    ui $ UI.start

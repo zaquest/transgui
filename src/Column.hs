@@ -2,7 +2,6 @@
 module Column where
 
 import Prelude hiding (id)
-import Data.List (nub)
 import Data.Text (Text)
 import Data.Some
 import Field (Field)
@@ -102,4 +101,4 @@ mkTreeViewColumn tv (Column title (field:_) renderer) = do
 
 
 collectFields :: [Column] -> [Some Field]
-collectFields cols = nub . concat $ map dependencies cols
+collectFields cols = Field.nub . concat $ map dependencies cols

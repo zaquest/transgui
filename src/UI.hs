@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, OverloadedLabels #-}
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PatternSynonyms, NamedFieldPuns #-}
 module UI where
 
 import Data.Monoid ((<>))
@@ -11,8 +12,10 @@ import System.Environment (getArgs)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar, newMVar)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar, newMVar, readMVar)
 import Data.Int
+import GI.GLib.Functions (timeoutAddSeconds)
+import GI.GLib.Constants (pattern PRIORITY_DEFAULT, pattern SOURCE_CONTINUE)
 import Some
 import Field (Field)
 import qualified Field as F
@@ -98,8 +101,17 @@ activateApp store mbuilder app = do
   putMVar mbuilder builder
 
 
-init :: IO Data
-init = do
+updateStoreCb :: Data -> ([Text] -> IO [Torrent]) -> IO Bool
+updateStoreCb (Data {uiColumns, uiStore}) getTorrents = do
+  cols <- readMVar uiColumns
+  let fields = C.collectFields cols
+  torrents <- getTorrents (F.keys fields)
+  updateStore uiStore fields torrents
+  pure SOURCE_CONTINUE
+
+
+init :: ([Text] -> IO [Torrent]) -> IO Data
+init getTorrents = do
   app <- new Gtk.Application
     [ #applicationId := "zaquest.transgui"
     , #flags := [ Gio.ApplicationFlagsFlagsNone ]
@@ -109,7 +121,23 @@ init = do
   store <- mkListStore
   void (on app #activate (activateApp store mbuilder app))
   quitAction app
-  pure (Data app mbuilder store mcolumns)
+  let datum = (Data app mbuilder store mcolumns)
+  _ <- updateStoreCb datum getTorrents
+  timeoutAddSeconds PRIORITY_DEFAULT 5 (updateStoreCb datum getTorrents)
+  pure datum
+
+
+updateStore :: Gtk.ListStore -> [Some Field] -> [Torrent] -> IO ()
+updateStore store fields torrents = do
+  #clear store
+  mapM_ (addTorrent store fields) torrents
+
+
+addTorrent :: Gtk.ListStore -> [Some Field] -> Torrent -> IO ()
+addTorrent store fields torrent = do
+  let idxs = F.indices fields
+  gvals <- F.gvalues fields torrent
+  void $ #insertWithValuesv store (-1) idxs gvals
 
 
 asks :: (Data -> a) -> UI a
@@ -120,8 +148,8 @@ ask :: UI Data
 ask = asks id
 
 
-start :: ([Text] -> IO [Torrent]) -> UI ()
-start getTorrents = do
+start :: UI ()
+start = do
   app <- asks uiApp
   liftIO $ void (Gio.applicationRun app Nothing)
 
