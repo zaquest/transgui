@@ -1,10 +1,12 @@
 import Test.HUnit
 import qualified TestField
+import qualified TestColumn
 
 
 tests = test
   [
-    TestField.tests
+    TestField.tests,
+    TestColumn.tests
   ]
 
 

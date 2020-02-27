@@ -1,13 +1,19 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, TypeOperators, InstanceSigs, GADTs #-}
 module Field where
 
 import Prelude hiding (id)
 import Data.Proxy (Proxy(..))
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
-import Data.GI.Base (GType, IsGValue(..))
+import Data.GI.Base (GType(gtypeToCGType), IsGValue(..), gtypeName)
 import Data.GI.Base.GType (gtypeString, gtypeInt, gtypeInt64, gtypeBoolean)
 import Some
+import Data.GADT.Compare (GEq(..))
+import Data.GADT.Show (GShow(..))
+import Data.Type.Equality ((:~:)(..), TestEquality(..))
+import GHC.Generics (Generic)
+import Type.Reflection
+import System.IO.Unsafe (unsafePerformIO)
 
 
 data Field a = Field
@@ -18,10 +24,10 @@ data Field a = Field
   -- | ListStore index
   , idx :: Int32
   -- | Haskell type for a field
-  , htype :: Proxy a
+  , htype :: TypeRep a
   -- | Gtk type for a field
   , gtype :: GType
-  }
+  } deriving (Eq, Show)
 
 
 instance IsGValue Text where
@@ -33,47 +39,71 @@ instance IsGValue Text where
       Nothing -> pure ""
 
 
+instance Eq GType where
+  gt1 == gt2 = gtypeToCGType gt1 == gtypeToCGType gt2
+
+
+instance Show GType where
+  show gt = unsafePerformIO (gtypeName gt)
+
+
+instance GEq Field where
+  geq fa fb = do
+    Refl <- testEquality (htype fa) (htype fb)
+    if fa == fb
+       then Just Refl
+       else Nothing
+
+
+instance GShow Field where
+  gshowsPrec = showsPrec
+
+
+mkField :: Typeable a => Text -> Int32 -> Proxy a -> GType -> Field a
+mkField name idx proxy gtype = Field name idx (typeOf (undefined :: a)) gtype
+
+
 id :: Field Int32
-id = Field "id" 0 (Proxy :: Proxy Int32) gtypeInt
+id = mkField "id" 0 (Proxy :: Proxy Int32) gtypeInt
 
 
 name :: Field Text
-name = Field "name" 1 (Proxy :: Proxy Text) gtypeString
+name = mkField "name" 1 (Proxy :: Proxy Text) gtypeString
 
 
 addedDate :: Field Int32
-addedDate = Field "addedDate" 2 (Proxy :: Proxy Int32) gtypeInt
+addedDate = mkField "addedDate" 2 (Proxy :: Proxy Int32) gtypeInt
 
 
 peersGettingFromUs :: Field Int32
-peersGettingFromUs = Field "peersGettingFromUs" 3 (Proxy :: Proxy Int32) gtypeInt
+peersGettingFromUs = mkField "peersGettingFromUs" 3 (Proxy :: Proxy Int32) gtypeInt
 
 
 peersSendingToUs :: Field Int32
-peersSendingToUs = Field "peersSendingToUs" 4 (Proxy :: Proxy Int32) gtypeInt
+peersSendingToUs = mkField "peersSendingToUs" 4 (Proxy :: Proxy Int32) gtypeInt
 
 
 downloadedEver :: Field Int64
-downloadedEver = Field "downloadedEver" 5 (Proxy :: Proxy Int64) gtypeInt64
+downloadedEver = mkField "downloadedEver" 5 (Proxy :: Proxy Int64) gtypeInt64
 
 
 uploadedEver :: Field Int64
-uploadedEver = Field "uploadedEver" 6 (Proxy :: Proxy Int64) gtypeInt64
+uploadedEver = mkField "uploadedEver" 6 (Proxy :: Proxy Int64) gtypeInt64
 
 
 isFinished :: Field Bool
-isFinished = Field "isFinished" 7 (Proxy :: Proxy Bool) gtypeBoolean
+isFinished = mkField "isFinished" 7 (Proxy :: Proxy Bool) gtypeBoolean
 
 
 rateUpload :: Field Int32
-rateUpload = Field "rateUpload" 8 (Proxy :: Proxy Int32) gtypeInt
+rateUpload = mkField "rateUpload" 8 (Proxy :: Proxy Int32) gtypeInt
 
 
 rateDownload :: Field Int32
-rateDownload = Field "rateDownload" 9 (Proxy :: Proxy Int32) gtypeInt
+rateDownload = mkField "rateDownload" 9 (Proxy :: Proxy Int32) gtypeInt
 
 sizeWhenDone :: Field Int64
-sizeWhenDone = Field "sizeWhenDone" 10 (Proxy :: Proxy Int64) gtypeInt64
+sizeWhenDone = mkField "sizeWhenDone" 10 (Proxy :: Proxy Int64) gtypeInt64
 
 
 allFields :: [Some Field]

@@ -2,8 +2,9 @@
 module Column where
 
 import Prelude hiding (id)
-import Data.Some
+import Data.List (nub)
 import Data.Text (Text)
+import Data.Some
 import Field (Field)
 import qualified Field
 import Data.GI.Base
@@ -98,3 +99,7 @@ mkTreeViewColumn tv (Column title (field:_) renderer) = do
       #addAttribute col cellRenderer "text" idx
       pure col
     _ -> error "not implemented"
+
+
+collectFields :: [Column] -> [Some Field]
+collectFields cols = nub . concat $ map dependencies cols

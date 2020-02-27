@@ -11,13 +11,14 @@ import System.Environment (getArgs)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar, newMVar)
 import Data.Int
 import Some
 import Field (Field)
 import qualified Field as F
 import Column (Column)
 import qualified Column as C
+import Torrent (Torrent)
 
 import Data.GI.Base
 import Data.GI.Base.GType
@@ -29,6 +30,7 @@ data Data = Data
   { uiApp :: Gtk.Application
   , uiBuilder :: MVar Gtk.Builder
   , uiStore :: Gtk.ListStore
+  , uiColumns :: MVar [Column]
   }
 
 
@@ -69,6 +71,7 @@ initTreeView tv cols = mapM_ (C.mkTreeViewColumn tv) cols
 
 activateApp :: Gtk.ListStore -> MVar Gtk.Builder -> Gtk.Application -> IO ()
 activateApp store mbuilder app = do
+  -- It is impossible to create builder before app activation
   builder <- new Gtk.Builder []
   #addFromFile builder "ui/main.glade"
 
@@ -90,8 +93,6 @@ activateApp store mbuilder app = do
 
   initTreeView torrentList C.allColumns
 
-  quitAction app
-
   #showAll window
 
   putMVar mbuilder builder
@@ -104,9 +105,11 @@ init = do
     , #flags := [ Gio.ApplicationFlagsFlagsNone ]
     ]
   mbuilder <- newEmptyMVar
+  mcolumns <- newMVar C.allColumns
   store <- mkListStore
   void (on app #activate (activateApp store mbuilder app))
-  pure (Data app mbuilder store)
+  quitAction app
+  pure (Data app mbuilder store mcolumns)
 
 
 asks :: (Data -> a) -> UI a
@@ -117,8 +120,8 @@ ask :: UI Data
 ask = asks id
 
 
-start :: UI ()
-start = do
+start :: ([Text] -> IO [Torrent]) -> UI ()
+start getTorrents = do
   app <- asks uiApp
   liftIO $ void (Gio.applicationRun app Nothing)
 

@@ -6,12 +6,14 @@ import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
+import Control.Concurrent.MVar (MVar, readMVar)
 import RPC (RPC)
 import qualified RPC
 import UI (UI)
 import qualified UI
 import Data.Text (Text)
 import qualified Field as F
+import qualified Column as C
 
 
 data Settings = Settings
@@ -63,6 +65,7 @@ main :: IO ()
 main = do
   datum <- init (Settings "http://192.168.0.100:9091/transmission/rpc")
   run datum $ do
-    torrents <- rpc (RPC.torrentGet (F.keys F.allFields))
+    torrents <- rpc (RPC.torrentGet (F.keys (C.collectFields [C.id, C.name])))
     liftIO $ print torrents
-    ui UI.start
+    rpcdata <- asks rpcData
+    ui $ UI.start (\keys -> RPC.run rpcdata (RPC.torrentGet keys))

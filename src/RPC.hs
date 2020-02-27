@@ -17,6 +17,8 @@ import Data.Aeson (object, (.=), encode, Value(..), ToJSON(..))
 import qualified Data.Vector as Vec
 import Data.Text (Text)
 import Torrent (Torrent)
+import Field (Field)
+import qualified Field as F
 import qualified Torrent as T
 import qualified Response
 import qualified Data.Aeson as Aeson
