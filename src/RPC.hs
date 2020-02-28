@@ -16,10 +16,10 @@ import qualified Data.ByteString.Lazy as LS
 import Data.Aeson (object, (.=), encode, Value(..), ToJSON(..))
 import qualified Data.Vector as Vec
 import Data.Text (Text)
-import Torrent (Torrent)
+import Torrent (Torrent, TID)
+import qualified Torrent as T
 import Field (Field)
 import qualified Field as F
-import qualified Torrent as T
 import qualified Response
 import qualified Data.Aeson as Aeson
 
@@ -99,22 +99,47 @@ ask :: RPC Data
 ask = asks id
 
 
-torrentGet :: [Text] -> RPC [Torrent]
-torrentGet fields = do
-  let req = object [ "method" .= ("torrent-get" :: Text)
-                   , "arguments" .= object ["fields" .= fields]
-                   ]
+data TorrentIDs = AllTorrents | RecentlyActive
+  deriving (Eq, Show)
+
+
+instance ToJSON TorrentIDs where
+  toJSON AllTorrents = Null
+  toJSON RecentlyActive = String "recently-active"
+
+
+type Key = Text
+
+
+torrentGetJSON :: TorrentIDs -> [Key] -> Value
+torrentGetJSON AllTorrents keys = object
+  [ "method" .= ("torrent-get" :: Text)
+  , "arguments" .= object [ "fields" .= keys ]
+  ]
+torrentGetJSON RecentlyActive keys = object
+  [ "method" .= ("torrent-get" :: Text)
+  , "arguments" .= object
+    [ "ids" .= ("recently-active" :: Text)
+    , "fields" .= keys
+    ]
+  ]
+
+
+torrentGet :: TorrentIDs -> [Key] -> RPC Response.TorrentGetArguments
+torrentGet ids keys = do
+  let req = torrentGetJSON ids keys
   resp <- requestLBS (encode req)
   let eresp =
         Aeson.eitherDecode (responseBody resp)
           :: Either String (Response.TorrentGet)
   case eresp of
-    Right resp -> pure $ Response.torrents $ Response.arguments resp
+    Right resp -> pure $ Response.arguments resp
     Left msg -> error msg
 
 
 main :: IO ()
 main = do
   let settings = RPC.Settings "http://192.168.0.100:9091/transmission/rpc"
-  hdr <- RPC.init settings >>= (`RPC.run` RPC.torrentGet ["id", "name"])
+  rpcData <- RPC.init settings
+  hdr <- RPC.run rpcData (RPC.torrentGet AllTorrents ["id", "name"])
   print hdr

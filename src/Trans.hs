@@ -14,6 +14,8 @@ import qualified UI
 import Data.Text (Text)
 import qualified Field as F
 import qualified Column as C
+import qualified Response
+import Torrent (Torrent)
 
 
 data Settings = Settings
@@ -50,10 +52,16 @@ ui action = do
   liftIO $ UI.run moduleData action
 
 
+getAllTorrents :: IORef RPC.Data -> [RPC.Key] -> IO [Torrent]
+getAllTorrents rpcData keys = do
+  args <- RPC.run rpcData (RPC.torrentGet RPC.AllTorrents keys)
+  pure (Response.torrents args)
+
+
 init :: Settings -> IO Data
 init settings = do
   rpcData <- RPC.init (RPC.Settings (rcpAddress settings))
-  uiData <- UI.init (\keys -> RPC.run rpcData (RPC.torrentGet keys))
+  uiData <- UI.init (getAllTorrents rpcData)
   pure $ Data rpcData uiData
 
 

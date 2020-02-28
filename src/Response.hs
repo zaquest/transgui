@@ -3,9 +3,9 @@
 module Response where
 
 import GHC.Generics (Generic)
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON(parseJSON), withObject, (.:), (.:?), (.!=))
 import Data.Text (Text)
-import Torrent (Torrent)
+import Torrent (Torrent, TID)
 
 
 data Response a = Response
@@ -19,10 +19,14 @@ instance FromJSON a => FromJSON (Response a)
 
 data TorrentGetArguments = TorrentGetArguments
   { torrents :: [Torrent]
-  , removed :: Maybe [Int]
+  , removed :: [TID]
   } deriving (Generic, Show)
 
-instance FromJSON TorrentGetArguments
+instance FromJSON TorrentGetArguments where
+  parseJSON = withObject "TorrentGetArguments" $ \o ->
+    TorrentGetArguments
+      <$> o .: "torrents"
+      <*> o .:? "removed" .!= []
 
 
 type TorrentGet = Response TorrentGetArguments

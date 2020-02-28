@@ -12,8 +12,11 @@ import Data.Maybe (fromMaybe)
 import Lens.Micro.TH
 
 
+type TID = Int32
+
+
 data Torrent = Torrent
-  { _id :: Int32
+  { _id :: TID
   , _name :: Text
   , _addedDate :: Int32
   , _peersGettingFromUs :: Int32

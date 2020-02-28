@@ -52,7 +52,7 @@ instance Show (Field a) where
 
 
 instance Eq (Field a) where
-  f1 == f2 = idx f1 == idx f2 && gtype f1 == gtype f2
+  f1 == f2 = idx f1 == idx f2
 
 
 instance Eq GType where
