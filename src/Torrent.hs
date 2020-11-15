@@ -34,7 +34,7 @@ makeLenses ''Torrent
 
 
 get :: (FromJSON a) => Object -> Text -> a -> Parser a
-get obj key val = (obj .:? key) <&> (fromMaybe val)
+get obj key val = (obj .:? key) <&> fromMaybe val
 
 
 instance FromJSON Torrent where

@@ -65,7 +65,7 @@ quitAction app = do
 
 
 initTreeView :: Gtk.TreeView -> [Column] -> IO ()
-initTreeView tv cols = mapM_ (C.mkTreeViewColumn tv) cols
+initTreeView tv = mapM_ (C.mkTreeViewColumn tv)
 
 
 activateApp :: Gtk.ListStore -> MVar Gtk.Builder -> Gtk.Application -> IO ()
@@ -88,7 +88,7 @@ activateApp store mbuilder app = do
 
 
 updateStoreCb :: Data -> ([Text] -> IO [Torrent]) -> IO Bool
-updateStoreCb (Data {uiColumns, uiStore}) getTorrents = do
+updateStoreCb Data{uiColumns, uiStore} getTorrents = do
   cols <- readMVar uiColumns
   let fields = C.collectFields cols
   torrents <- getTorrents (F.keys fields)
@@ -107,7 +107,7 @@ init getTorrents = do
   store <- mkListStore
   void (on app #activate (activateApp store mbuilder app))
   quitAction app
-  let datum = (Data app mbuilder store mcolumns)
+  let datum = Data app mbuilder store mcolumns
   _ <- updateStoreCb datum getTorrents
   timeoutAddSeconds PRIORITY_DEFAULT 5 (updateStoreCb datum getTorrents)
   pure datum

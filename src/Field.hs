@@ -73,7 +73,7 @@ mkField :: (IsGValue a, Typeable a)
 mkField name idx lens gtype = Field
   { key = name
   , idx = idx
-  , htype = (typeOf (undefined :: a))
+  , htype = typeRep
   , lens = lens
   , gtype = gtype
   , toGVal = toGValue
@@ -153,7 +153,7 @@ indices fs = mapWithSome fs idx
 
 
 getGValue :: Torrent -> Field a -> IO GValue
-getGValue t f = (toGVal f) (t ^. (lens f))
+getGValue t f = toGVal f (t ^. lens f)
 
 
 gvalue :: Torrent -> Some Field -> IO GValue
@@ -168,7 +168,7 @@ newtype SameField = SF { unSF :: Some Field }
 
 
 instance Eq SameField where
-  (SF sf1) == (SF sf2) = (withSome sf1 idx) == (withSome sf2 idx)
+  (SF sf1) == (SF sf2) = withSome sf1 idx == withSome sf2 idx
 
 
 nub :: [Some Field] -> [Some Field]

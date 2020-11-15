@@ -14,7 +14,7 @@ import qualified Response
 import Torrent (Torrent)
 
 
-data Settings = Settings
+newtype Settings = Settings
   { rcpAddress :: String
   }
 
@@ -72,4 +72,4 @@ main = do
     -- torrents <- rpc (RPC.torrentGet (F.keys (C.collectFields [C.id, C.name])))
     -- liftIO $ print torrents
     _rpcdata <- asks rpcData
-    ui $ UI.start
+    ui UI.start

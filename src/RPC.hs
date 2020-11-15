@@ -17,7 +17,7 @@ import qualified Response
 import qualified Data.Aeson as Aeson
 
 
-data Settings = Settings
+newtype Settings = Settings
   { rpcAddress :: String
   }
 
@@ -78,7 +78,7 @@ init settings = do
   newIORef rpcData
 
 
-run :: (IORef Data) -> RPC a -> IO a
+run :: IORef Data -> RPC a -> IO a
 run dataRef (RPC action) = Reader.runReaderT action dataRef
 
 
@@ -124,7 +124,7 @@ torrentGet ids keys = do
   resp <- requestLBS (encode req)
   let eresp =
         Aeson.eitherDecode (responseBody resp)
-          :: Either String (Response.TorrentGet)
+          :: Either String Response.TorrentGet
   case eresp of
     Right resp -> pure $ Response.arguments resp
     Left msg -> error msg
