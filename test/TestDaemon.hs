@@ -25,6 +25,7 @@ withTransmission body = shelly . withTmpDir $ \fp ->
     (\(_, pid) -> tearDown pid)
     (\(url, _) -> liftIO $ body url)
 
+
 setUp :: FilePath -> Sh (String, PID)
 setUp home = do
   let port = 9091

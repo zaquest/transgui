@@ -11,7 +11,6 @@ import qualified RPC
 import UI (UI)
 import qualified UI
 import qualified Response
-import Torrent (Torrent)
 
 
 newtype Settings = Settings
@@ -48,16 +47,24 @@ ui action = do
   liftIO $ UI.run moduleData action
 
 
-getAllTorrents :: IORef RPC.Data -> [RPC.Key] -> IO [Torrent]
+getAllTorrents :: IORef RPC.Data -> [RPC.Key] -> IO Response.TorrentGetArguments
 getAllTorrents rpcData keys = do
   args <- RPC.run rpcData (RPC.torrentGet RPC.AllTorrents keys)
-  pure (Response.torrents args)
+  print args
+  pure args
+
+
+getRecentTorrents :: IORef RPC.Data -> [RPC.Key] -> IO Response.TorrentGetArguments
+getRecentTorrents rpcData keys = do
+  args <- RPC.run rpcData (RPC.torrentGet RPC.RecentlyActive keys)
+  print args
+  pure args
 
 
 init :: Settings -> IO Data
 init settings = do
   rpcData <- RPC.init (RPC.Settings (rcpAddress settings))
-  uiData <- UI.init (getAllTorrents rpcData)
+  uiData <- UI.init (getAllTorrents rpcData) (getRecentTorrents rpcData)
   pure $ Data rpcData uiData
 
 

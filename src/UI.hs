@@ -14,11 +14,12 @@ import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, newMVar, readMVar)
 import GI.GLib.Functions (timeoutAddSeconds)
 import GI.GLib.Constants (pattern PRIORITY_DEFAULT, pattern SOURCE_CONTINUE)
 import Some
-import Field (Field)
 import qualified Field as F
 import Column (Column)
 import qualified Column as C
-import Torrent (Torrent)
+import Store (Store)
+import qualified Store
+import Response (TorrentGetArguments)
 
 import Data.GI.Base
 import qualified GI.Gio as Gio
@@ -28,7 +29,7 @@ import qualified GI.Gtk as Gtk
 data Data = Data
   { uiApp :: Gtk.Application
   , uiBuilder :: MVar Gtk.Builder
-  , uiStore :: Gtk.ListStore
+  , uiStore :: Store
   , uiColumns :: MVar [Column]
   }
 
@@ -68,7 +69,7 @@ initTreeView :: Gtk.TreeView -> [Column] -> IO ()
 initTreeView tv = mapM_ (C.mkTreeViewColumn tv)
 
 
-activateApp :: Gtk.ListStore -> MVar Gtk.Builder -> Gtk.Application -> IO ()
+activateApp :: Store -> MVar Gtk.Builder -> Gtk.Application -> IO ()
 activateApp store mbuilder app = do
   -- It is impossible to create builder before app activation
   builder <- new Gtk.Builder []
@@ -78,7 +79,7 @@ activateApp store mbuilder app = do
   set window [ #application := app ]
 
   Just torrentList <- getBuilderObj builder "torrent-list" Gtk.TreeView
-  set torrentList [ #model := store ]
+  set torrentList [ #model := Store.store store ]
 
   initTreeView torrentList C.allColumns
 
@@ -87,43 +88,32 @@ activateApp store mbuilder app = do
   putMVar mbuilder builder
 
 
-updateStoreCb :: Data -> ([Text] -> IO [Torrent]) -> IO Bool
+updateStoreCb :: Data -> ([Text] -> IO TorrentGetArguments) -> IO Bool
 updateStoreCb Data{uiColumns, uiStore} getTorrents = do
   cols <- readMVar uiColumns
   let fields = C.collectFields cols
   torrents <- getTorrents (F.keys fields)
-  updateStore uiStore fields torrents
+  Store.update uiStore fields torrents
   pure SOURCE_CONTINUE
 
 
-init :: ([Text] -> IO [Torrent]) -> IO Data
-init getTorrents = do
+init :: ([Text] -> IO TorrentGetArguments)
+     -> ([Text] -> IO TorrentGetArguments)
+     -> IO Data
+init getAllTorrents getRecentTorrents = do
   app <- new Gtk.Application
     [ #applicationId := "zaquest.transgui"
     , #flags := [ Gio.ApplicationFlagsFlagsNone ]
     ]
   mbuilder <- newEmptyMVar
   mcolumns <- newMVar C.allColumns
-  store <- mkListStore
+  store <- Store.empty
   void (on app #activate (activateApp store mbuilder app))
   quitAction app
   let datum = Data app mbuilder store mcolumns
-  _ <- updateStoreCb datum getTorrents
-  timeoutAddSeconds PRIORITY_DEFAULT 5 (updateStoreCb datum getTorrents)
+  _ <- updateStoreCb datum getAllTorrents
+  timeoutAddSeconds PRIORITY_DEFAULT 5 (updateStoreCb datum getRecentTorrents)
   pure datum
-
-
-updateStore :: Gtk.ListStore -> [Some Field] -> [Torrent] -> IO ()
-updateStore store fields torrents = do
-  #clear store
-  mapM_ (addTorrent store fields) torrents
-
-
-addTorrent :: Gtk.ListStore -> [Some Field] -> Torrent -> IO ()
-addTorrent store fields torrent = do
-  let idxs = F.indices fields
-  gvals <- F.gvalues fields torrent
-  void $ #insertWithValuesv store (-1) idxs gvals
 
 
 asks :: (Data -> a) -> UI a
