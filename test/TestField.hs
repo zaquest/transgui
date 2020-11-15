@@ -3,7 +3,6 @@ module TestField where
 
 import Test.HUnit
 import Control.Monad (void)
-import Data.Int (Int32)
 import Some
 import qualified Field as F
 import RPC
@@ -19,18 +18,18 @@ tests = test
     "nubFields removes duplicates" ~:
       let
         fieldsWithDuplicates =
-          [ This F.id
-          , This F.id
-          , This F.name
-          , This F.id
-          , This F.rateUpload
-          , This F.name
-          , This F.rateUpload
+          [ mkSome F.id
+          , mkSome F.id
+          , mkSome F.name
+          , mkSome F.id
+          , mkSome F.rateUpload
+          , mkSome F.name
+          , mkSome F.rateUpload
           ]
         uniqueFields =
-          [ This F.id
-          , This F.name
-          , This F.rateUpload
+          [ mkSome F.id
+          , mkSome F.name
+          , mkSome F.rateUpload
           ]
       in F.nub fieldsWithDuplicates ~=? uniqueFields,
 

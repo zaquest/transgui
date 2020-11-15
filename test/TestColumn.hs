@@ -1,7 +1,6 @@
 module TestColumn where
 
 import Test.HUnit
-import Data.Int (Int32)
 import Some
 import qualified Field as F
 import qualified Column as C
@@ -21,9 +20,9 @@ tests = test
           , C.uploadSpeed
           ]
         uniqueMatchingFields =
-          [ This F.id
-          , This F.name
-          , This F.rateUpload
+          [ mkSome F.id
+          , mkSome F.name
+          , mkSome F.rateUpload
           ]
       in C.collectFields columnsWithDuplicates ~=? uniqueMatchingFields
   ]

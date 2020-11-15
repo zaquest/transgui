@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 module RPC where
 
-import GHC.Generics (Generic)
 import Prelude hiding (init)
 import Data.List (find)
-import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -14,12 +12,7 @@ import Network.HTTP.Types
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LS
 import Data.Aeson (object, (.=), encode, Value(..), ToJSON(..))
-import qualified Data.Vector as Vec
 import Data.Text (Text)
-import Torrent (Torrent, TID)
-import qualified Torrent as T
-import Field (Field)
-import qualified Field as F
 import qualified Response
 import qualified Data.Aeson as Aeson
 

@@ -5,15 +5,11 @@ import Prelude hiding (init)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.IORef (IORef, newIORef, readIORef, modifyIORef)
-import Control.Concurrent.MVar (MVar, readMVar)
+import Data.IORef (IORef)
 import RPC (RPC)
 import qualified RPC
 import UI (UI)
 import qualified UI
-import Data.Text (Text)
-import qualified Field as F
-import qualified Column as C
 import qualified Response
 import Torrent (Torrent)
 
@@ -75,5 +71,5 @@ main = do
   run datum $ do
     -- torrents <- rpc (RPC.torrentGet (F.keys (C.collectFields [C.id, C.name])))
     -- liftIO $ print torrents
-    rpcdata <- asks rpcData
+    _rpcdata <- asks rpcData
     ui $ UI.start

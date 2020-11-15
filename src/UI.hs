@@ -4,16 +4,13 @@
 {-# LANGUAGE PatternSynonyms, NamedFieldPuns #-}
 module UI where
 
-import Data.Monoid ((<>))
 import Control.Monad (void)
 import qualified Data.Text.IO as T
-import Data.Text (Text, pack)
-import System.Environment (getArgs)
+import Data.Text (Text)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar, newMVar, readMVar)
-import Data.Int
+import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, newMVar, readMVar)
 import GI.GLib.Functions (timeoutAddSeconds)
 import GI.GLib.Constants (pattern PRIORITY_DEFAULT, pattern SOURCE_CONTINUE)
 import Some
@@ -24,7 +21,6 @@ import qualified Column as C
 import Torrent (Torrent)
 
 import Data.GI.Base
-import Data.GI.Base.GType
 import qualified GI.Gio as Gio
 import qualified GI.Gtk as Gtk
 

@@ -3,36 +3,33 @@ module Field where
 
 import Prelude hiding (id)
 import qualified Data.List as List
-import Data.Proxy (Proxy(..))
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.GI.Base (GType(gtypeToCGType), IsGValue(..), gtypeName, GValue)
+import Data.GI.Base (GType, IsGValue(..), GValue)
 import Data.GI.Base.GType (gtypeString, gtypeInt, gtypeInt64, gtypeBoolean)
 import Some
 import Data.GADT.Compare (GEq(..))
 import Data.GADT.Show (GShow(..))
-import Data.Type.Equality ((:~:)(..), TestEquality(..))
-import GHC.Generics (Generic)
+import Data.Type.Equality (TestEquality(..))
 import Type.Reflection
-import System.IO.Unsafe (unsafePerformIO)
 import Torrent (Torrent)
 import qualified Torrent as T
 import Lens.Micro (Lens', (^.))
 
 
 data Field a = Field
-  -- | Transmission torrent structure key
+  { key :: Text
+  -- ^ Transmission torrent structure key
   -- https://github.com/transmission/transmission/blob/master/extras/rpc-spec.txt
   -- See table in 3.3
-  { key :: Text
-  -- | ListStore index
   , idx :: Int32
-  -- | Haskell type for a field
+  -- ^ ListStore index
   , htype :: TypeRep a
+  -- ^ Haskell type for a field
   , lens :: Lens' Torrent a
-  -- | Gtk type for a field
   , gtype :: GType
+  -- ^ Gtk type for a field
   , toGVal :: a -> IO GValue
   , fromGVal :: GValue -> IO a
   }
@@ -53,14 +50,6 @@ instance Show (Field a) where
 
 instance Eq (Field a) where
   f1 == f2 = idx f1 == idx f2
-
-
-instance Eq GType where
-  gt1 == gt2 = gtypeToCGType gt1 == gtypeToCGType gt2
-
-
-instance Show GType where
-  show gt = unsafePerformIO (gtypeName gt)
 
 
 instance GEq Field where
@@ -137,17 +126,17 @@ sizeWhenDone = mkField "sizeWhenDone" 10 T.sizeWhenDone gtypeInt64
 
 allFields :: [Some Field]
 allFields =
-  [ This id
-  , This name
-  , This addedDate
-  , This peersGettingFromUs
-  , This peersSendingToUs
-  , This downloadedEver
-  , This uploadedEver
-  , This isFinished
-  , This rateUpload
-  , This rateDownload
-  , This sizeWhenDone
+  [ mkSome id
+  , mkSome name
+  , mkSome addedDate
+  , mkSome peersGettingFromUs
+  , mkSome peersSendingToUs
+  , mkSome downloadedEver
+  , mkSome uploadedEver
+  , mkSome isFinished
+  , mkSome rateUpload
+  , mkSome rateDownload
+  , mkSome sizeWhenDone
   ]
 
 

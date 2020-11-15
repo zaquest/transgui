@@ -27,47 +27,47 @@ keys = Field.keys . dependencies
 
 
 id :: Column
-id = Column "ID" [This Field.id] RenderText
+id = Column "ID" [mkSome Field.id] RenderText
 
 
 name :: Column
-name = Column "Name" [This Field.name] RenderText
+name = Column "Name" [mkSome Field.name] RenderText
 
 
 addedOn :: Column
-addedOn = Column "Added on" [This Field.addedDate] RenderText
+addedOn = Column "Added on" [mkSome Field.addedDate] RenderText
 
 
 leachers :: Column
-leachers = Column "Leachers" [This Field.peersGettingFromUs] RenderText
+leachers = Column "Leachers" [mkSome Field.peersGettingFromUs] RenderText
 
 
 seeders :: Column
-seeders = Column "Seeders" [This Field.peersSendingToUs] RenderText
+seeders = Column "Seeders" [mkSome Field.peersSendingToUs] RenderText
 
 
 downloaded :: Column
-downloaded = Column "Downloaded" [This Field.downloadedEver] RenderText
+downloaded = Column "Downloaded" [mkSome Field.downloadedEver] RenderText
 
 
 uploaded :: Column
-uploaded = Column "Uploaded" [This Field.uploadedEver] RenderText
+uploaded = Column "Uploaded" [mkSome Field.uploadedEver] RenderText
 
 
 done :: Column
-done = Column "Done" [This Field.isFinished] RenderText
+done = Column "Done" [mkSome Field.isFinished] RenderText
 
 
 uploadSpeed :: Column
-uploadSpeed = Column "Upload speed" [This Field.rateUpload] RenderText
+uploadSpeed = Column "Upload speed" [mkSome Field.rateUpload] RenderText
 
 
 downloadSpeed :: Column
-downloadSpeed = Column "Download speed" [This Field.rateDownload] RenderText
+downloadSpeed = Column "Download speed" [mkSome Field.rateDownload] RenderText
 
 
 size :: Column
-size = Column "Size" [This Field.sizeWhenDone] RenderText
+size = Column "Size" [mkSome Field.sizeWhenDone] RenderText
 
 
 allColumns :: [Column]

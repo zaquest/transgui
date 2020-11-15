@@ -12,7 +12,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS
-import Control.Concurrent.Async (Async, cancel)
 import qualified Filesystem.Path.CurrentOS as FP
 import System.INotify
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
@@ -42,13 +41,13 @@ tearDown pid = run_ "kill" [pid]
 
 
 writeSettings :: FilePath -> Int -> Sh ()
-writeSettings home port =
+writeSettings home _port =
   writefile (home </> ("settings.json" :: Text)) (settings home 9091)
 
 
 putWhenCreated :: MVar () -> FilePath -> Event -> IO ()
 putWhenCreated wait fp1 (Created _ rfp2) =
-  when (FP.filename fp1 == FP.filename fp2) (putMVar wait ())
+  when (FP.filename (FP.decodeString fp1) == FP.filename (FP.decodeString fp2)) (putMVar wait ())
     where fp2 = fromRaw rfp2
 putWhenCreated _ _ _ = pure ()
 
@@ -60,7 +59,7 @@ mkWaitFor fp = do
   watch <- addWatch
     inotify
     [Create]
-    (BS.pack . FP.encodeString $ FP.directory fp)
+    (BS.pack . FP.encodeString . FP.directory $ FP.decodeString fp)
     (putWhenCreated wait fp)
   pure $ do
     takeMVar wait
@@ -166,10 +165,10 @@ settings home port = [r|{
 
 encodeText :: FilePath -> Text
 encodeText fp =
-  case FP.toText fp of
+  case FP.toText (FP.decodeString fp) of
     Right t -> t
     Left _ -> error ("Invalid file path" <> show fp)
 
 
 fromRaw :: ByteString -> FilePath
-fromRaw bs = FP.fromText (T.decodeUtf8 bs)
+fromRaw = FP.encodeString . FP.fromText . T.decodeUtf8
