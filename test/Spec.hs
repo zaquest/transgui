@@ -1,12 +1,14 @@
 import Test.HUnit
 import qualified TestField
 import qualified TestColumn
+import qualified TestTimeFormat
 
 
 tests = test
   [
     TestField.tests,
-    TestColumn.tests
+    TestColumn.tests,
+    TestTimeFormat.tests
   ]
 
 

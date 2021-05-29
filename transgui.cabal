@@ -35,7 +35,8 @@ library
                        some,
                        microlens,
                        microlens-th,
-                       unordered-containers
+                       unordered-containers,
+                       time
   default-language: Haskell2010
 
 
@@ -49,7 +50,7 @@ executable transgui-exe
 test-suite transgui-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
-  other-modules: TestField TestColumn TestDaemon
+  other-modules: TestField TestColumn TestDaemon TestTimeFormat
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N

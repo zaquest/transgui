@@ -1,18 +1,22 @@
 {-# LANGUAGE OverloadedStrings, OverloadedLabels #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Column where
 
 import Prelude hiding (id)
-import Data.Text (Text)
+import Data.Int (Int32)
+import Data.Maybe (fromJust)
+import Data.Text (Text, pack)
 import Data.Some
-import Field (Field)
+import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime, POSIXTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import Field (Field(..))
 import qualified Field
 import Data.GI.Base
 import qualified GI.Gtk as Gtk
 
 
-data Renderer = RenderText
-              | RenderFunc
-  deriving (Eq, Show)
+data Renderer = RenderText | RenderFunc Gtk.TreeCellDataFunc
 
 
 data Column = Column
@@ -35,7 +39,7 @@ name = Column "Name" [mkSome Field.name] RenderText
 
 
 addedOn :: Column
-addedOn = Column "Added on" [mkSome Field.addedDate] RenderText
+addedOn = Column "Added on" [mkSome Field.addedDate] (RenderFunc $ renderAddedOn Field.addedDate)
 
 
 leachers :: Column
@@ -97,8 +101,36 @@ mkTreeViewColumn tv (Column title (field:_) renderer) = do
       let idx = withSome field Field.idx
       #addAttribute col cellRenderer "text" idx
       pure col
-    _ -> error "not implemented"
+    RenderFunc func -> do
+      cellRenderer <- new Gtk.CellRendererText []
+      #packStart col cellRenderer True
+      #appendColumn tv col
+      #setCellDataFunc col cellRenderer (Just func)
+      pure col
+    -- _ -> error "not implemented"
 
 
 collectFields :: [Column] -> [Some Field]
-collectFields cols = Field.nub . concat $ map dependencies cols
+collectFields = Field.nub . concatMap dependencies
+
+
+renderAddedOn :: Field Int32
+              -> Gtk.TreeViewColumn
+              -> Gtk.CellRenderer
+              -> Gtk.TreeModel
+              -> Gtk.TreeIter
+              -> IO ()
+renderAddedOn Field{idx, fromGVal} col renderer model iter = do
+  timestamp <- fromGVal =<< #getValue model iter idx
+  time <- formatTimestamp timestamp
+  rendererText <- fromJust <$> castTo Gtk.CellRendererText renderer
+  set rendererText [ #text := time ]
+
+
+formatTimestamp :: Int32 -> IO Text
+formatTimestamp timestamp = do
+  let utcTime = posixSecondsToUTCTime (realToFrac timestamp)
+  tz <- getCurrentTimeZone
+  let time = utcToLocalTime tz utcTime
+  let timeString = formatTime defaultTimeLocale "%H:%M:%S %d.%m.%Y" time
+  pure (pack timeString)
