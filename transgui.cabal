@@ -63,5 +63,6 @@ test-suite transgui-test
                  raw-strings-qq,
                  system-filepath,
                  hinotify,
+                 time,
                  transgui
   default-language: Haskell2010

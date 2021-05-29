@@ -7,7 +7,11 @@ import Data.Int (Int32)
 import Data.Maybe (fromJust)
 import Data.Text (Text, pack)
 import Data.Some
-import Data.Time.LocalTime (getCurrentTimeZone, utcToLocalTime)
+import Data.Time.LocalTime
+  ( getCurrentTimeZone
+  , utcToLocalTime
+  , TimeZone
+  )
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, POSIXTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Field (Field(..))
@@ -122,15 +126,15 @@ renderAddedOn :: Field Int32
               -> IO ()
 renderAddedOn Field{idx, fromGVal} col renderer model iter = do
   timestamp <- fromGVal =<< #getValue model iter idx
-  time <- formatTimestamp timestamp
+  timezone <- getCurrentTimeZone
+  let time = formatTimestamp timezone timestamp
   rendererText <- fromJust <$> castTo Gtk.CellRendererText renderer
   set rendererText [ #text := time ]
 
 
-formatTimestamp :: Int32 -> IO Text
-formatTimestamp timestamp = do
+formatTimestamp :: TimeZone -> Int32 -> Text
+formatTimestamp timezone timestamp =
   let utcTime = posixSecondsToUTCTime (realToFrac timestamp)
-  tz <- getCurrentTimeZone
-  let time = utcToLocalTime tz utcTime
-  let timeString = formatTime defaultTimeLocale "%H:%M:%S %d.%m.%Y" time
-  pure (pack timeString)
+      time = utcToLocalTime timezone utcTime
+      timeString = formatTime defaultTimeLocale "%H:%M:%S %d.%m.%Y" time
+   in pack timeString
