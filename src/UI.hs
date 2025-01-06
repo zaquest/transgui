@@ -24,6 +24,7 @@ import Response (TorrentGetArguments)
 import Data.GI.Base
 import qualified GI.Gio as Gio
 import qualified GI.Gtk as Gtk
+import GI.GObject.Objects.Object
 
 
 data Data = Data

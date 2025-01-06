@@ -5,6 +5,7 @@ import Prelude hiding (id)
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import Data.Aeson (Object, (.:?), withObject)
+import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (Parser, FromJSON(..))
 import Data.Default (Default(..))
 import Data.Functor ((<&>))
@@ -34,7 +35,7 @@ makeLenses ''Torrent
 
 
 get :: (FromJSON a) => Object -> Text -> a -> Parser a
-get obj key val = (obj .:? key) <&> fromMaybe val
+get obj key val = (obj .:? fromText key) <&> fromMaybe val
 
 
 instance FromJSON Torrent where

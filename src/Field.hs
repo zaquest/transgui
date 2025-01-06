@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes, TypeOperators, InstanceSigs, GADTs #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, GADTs #-}
 module Field where
 
 import Prelude hiding (id)
@@ -6,7 +6,7 @@ import qualified Data.List as List
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.GI.Base (GType, IsGValue(..), GValue)
+import Data.GI.Base (GType, IsGValue(..), GValue, toGValue, fromGValue)
 import Data.GI.Base.GType (gtypeString, gtypeInt, gtypeInt64, gtypeBoolean)
 import Some
 import Data.GADT.Compare (GEq(..))
@@ -36,9 +36,10 @@ data Field a = Field
 
 
 instance IsGValue Text where
-  toGValue a = toGValue (Just a)
-  fromGValue g = do
-    ma <- fromGValue g :: IO (Maybe Text)
+  gvalueGType_ = pure gtypeString
+  gvalueSet_ ptr val = gvalueSet_ ptr (Just val)
+  gvalueGet_ ptr = do
+    ma <- gvalueGet_ ptr :: IO (Maybe Text)
     case ma of
       Just a -> pure a
       Nothing -> pure ""
@@ -169,7 +170,6 @@ newtype SameField = SF { unSF :: Some Field }
 
 instance Eq SameField where
   (SF sf1) == (SF sf2) = withSome sf1 idx == withSome sf2 idx
-
 
 nub :: [Some Field] -> [Some Field]
 nub = map unSF . List.nub . map SF
